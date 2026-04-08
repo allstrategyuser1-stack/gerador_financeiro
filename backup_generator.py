@@ -79,6 +79,63 @@ def carregar_centro_custo(file):
 
 
 # =========================
+# 📥 TESOURARIA (CONTAS BANCÁRIAS)
+# =========================
+def carregar_tesouraria(file):
+
+    try:
+        df = pd.read_excel(file, dtype=str)
+    except:
+        file.seek(0)
+        df = pd.read_csv(file, dtype=str)
+
+    df = normalizar_colunas(df)
+
+    # Cabeçalho duplo → ignora primeira linha
+    if not any("codigo" in c for c in df.columns):
+        file.seek(0)
+        df = pd.read_excel(file, dtype=str, skiprows=1)
+        df = normalizar_colunas(df)
+
+    # Detectar colunas
+    colunas_codigo = [c for c in df.columns if "codigo" in c]
+    if not colunas_codigo:
+        raise ValueError("Coluna de Código não encontrada.")
+    col_codigo = colunas_codigo[-1]
+
+    col_nome = next((
+        c for c in df.columns
+        if "nome conta externa" in c
+        or "conta externa" in c
+        or "nome" in c
+    ), None)
+
+    if not col_codigo:
+        raise ValueError("Coluna de Código não encontrada.")
+
+    if not col_nome:
+        df["nome"] = ""
+        col_nome = "nome"
+
+    # Limpeza
+    df = df[df[col_codigo].notnull()]
+    df[col_codigo] = df[col_codigo].astype(str).str.strip()
+
+    if df.empty:
+        raise ValueError("Nenhuma conta bancária válida encontrada.")
+
+    return {
+        "cod_tesouraria": df[col_codigo].unique().tolist(),
+        "preview": df[[col_codigo, col_nome]].rename(
+            columns={
+                col_codigo: "Código",
+                col_nome: "Conta bancária"
+            }
+        )
+    }
+
+
+# =========================
 # 📥 CLASSIFICAÇÃO
 # =========================
 def carregar_classificacao(estrutura_file, externo_file):
@@ -158,7 +215,7 @@ def gerar_movimentacoes(qtd, decimais, data_inicio_liq, data_fim_liq, params=Non
         # -------------------------
         # Valor
         # -------------------------
-        valor_float = round(random.uniform(50, 5000), decimais)
+        valor_float = round(random.uniform(1, 100000), decimais)
         valor = f"{valor_float:.{decimais}f}".replace(".", ",")
 
         # -------------------------
@@ -189,7 +246,7 @@ def gerar_movimentacoes(qtd, decimais, data_inicio_liq, data_fim_liq, params=Non
         cod_unidade = (
             random.choice(params["cod_unidade"])
             if params and "cod_unidade" in params
-            else "01"
+            else ""
         )
 
         # -------------------------
@@ -198,6 +255,15 @@ def gerar_movimentacoes(qtd, decimais, data_inicio_liq, data_fim_liq, params=Non
         cod_centro_custo = (
             random.choice(params["cod_centro_custo"])
             if params and "cod_centro_custo" in params
+            else ""
+        )
+
+        # -------------------------
+        # Tesouraria
+        # -------------------------
+        cod_tesouraria = (
+            random.choice(params["cod_tesouraria"])
+            if params and "cod_tesouraria" in params
             else ""
         )
 
@@ -239,10 +305,10 @@ def gerar_movimentacoes(qtd, decimais, data_inicio_liq, data_fim_liq, params=Non
 
             "cod_unidade": cod_unidade,
             "cod_centro_de_custo": cod_centro_custo,
-            "cod_tesouraria": random.choice(["1", "2"]),
-            "cod_tipo_de_documento": random.choice(["10", "20"]),
+            "cod_tesouraria": cod_tesouraria,
+            "cod_tipo_de_documento": "",
             "cod_classificacao_financeira": cod_classificacao,
-            "cod_projeto": random.choice(["1000", "2000"]),
+            "cod_projeto": "",
 
             "prev_s_doc": "N",
             "suspenso": "N",
