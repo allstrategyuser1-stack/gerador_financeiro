@@ -179,7 +179,7 @@ def gerar_movimentacoes(qtd, decimais, data_inicio_liq, data_fim_liq, params=Non
         cod_centro_custo = (
             random.choice(params["cod_centro_custo"])
             if params and "cod_centro_custo" in params
-            else "1000"
+            else ""
         )
 
         cod_cliente_fornec = (
