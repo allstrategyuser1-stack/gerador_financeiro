@@ -256,6 +256,15 @@ def gerar_movimentacoes(qtd, decimais, data_inicio_liq, data_fim_liq, params=Non
         )
 
         # -------------------------
+        # Tesouraria
+        # -------------------------
+        cod_tesouraria = (
+            random.choice(params["cod_tesouraria"])
+            if params and "cod_tesouraria" in params
+            else ""
+        )
+
+        # -------------------------
         # Classificação
         # -------------------------
         if params and "classificacoes" in params:
