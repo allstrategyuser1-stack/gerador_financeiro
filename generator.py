@@ -98,7 +98,10 @@ def carregar_tesouraria(file):
         df = normalizar_colunas(df)
 
     # Detectar colunas
-    col_codigo = next((c for c in df.columns if "codigo" in c), None)
+    colunas_codigo = [c for c in df.columns if "codigo" in c]
+        if not colunas_codigo:
+        raise ValueError("Coluna de Código não encontrada.")
+        col_codigo = colunas_codigo[-1]
 
     col_nome = next((
         c for c in df.columns
