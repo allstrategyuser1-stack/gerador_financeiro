@@ -23,14 +23,13 @@ def gerar_template_unidade():
         "Nome da unidade": []
     })
 
-buffer = io.BytesIO()
-gerar_template_unidade().to_excel(buffer, index=False, engine="openpyxl")
+buffer_un = io.BytesIO()
+gerar_template_unidade().to_excel(buffer_un, index=False, engine="openpyxl")
 
 st.download_button(
     label="Baixar template de Unidades",
-    data=buffer.getvalue(),
-    file_name="template_unidades.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    data=buffer_un.getvalue(),
+    file_name="template_unidades.xlsx"
 )
 
 # =========================
@@ -38,7 +37,7 @@ st.download_button(
 # =========================
 st.markdown("### 📤 Importar Unidades")
 
-file_unidade = st.file_uploader("Upload Unidades (CSV ou XLSX)", key="unidade")
+file_unidade = st.file_uploader("Upload Unidades", key="unidade")
 
 if file_unidade:
     try:
@@ -49,28 +48,48 @@ if file_unidade:
         st.dataframe(resultado["preview"])
 
     except Exception as e:
-        st.error(f"Erro no arquivo de unidades: {e}")
+        st.error(f"Erro unidades: {e}")
         st.stop()
 
 # =========================
-# 📤 IMPORTAR CENTRO DE CUSTO
+# 📥 TEMPLATE CENTRO CUSTO
+# =========================
+st.markdown("### 📄 Template Centro de Custo")
+
+def gerar_template_cc():
+    return pd.DataFrame({
+        "Código": [],
+        "Centro de custo externo": []
+    })
+
+buffer_cc = io.BytesIO()
+gerar_template_cc().to_excel(buffer_cc, index=False, engine="openpyxl")
+
+st.download_button(
+    label="Baixar template de Centro de Custo",
+    data=buffer_cc.getvalue(),
+    file_name="template_centro_custo.xlsx"
+)
+
+# =========================
+# 📤 IMPORTAR CENTRO CUSTO
 # =========================
 st.markdown("### 📤 Importar Centro de Custo")
 
-st.info("Utilize os dados do Centro de Custo Externo do Software Fluxo.")
+st.info("Utilize o Centro de Custo Externo do Software Fluxo.")
 
-file_cc = st.file_uploader("Upload Centro de Custo (CSV ou XLSX)", key="cc")
+file_cc = st.file_uploader("Upload Centro de Custo", key="cc")
 
 if file_cc:
     try:
         resultado_cc = carregar_centro_custo(file_cc)
         params["cod_centro_custo"] = resultado_cc["cod_centro_custo"]
 
-        st.success("Centro de custo carregado com sucesso!")
+        st.success("Centro de custo carregado!")
         st.dataframe(resultado_cc["preview"])
 
     except Exception as e:
-        st.error(f"Erro no arquivo de centro de custo: {e}")
+        st.error(f"Erro centro de custo: {e}")
         st.stop()
 
 # =========================
@@ -79,26 +98,24 @@ if file_cc:
 st.markdown("### ⚙️ Parâmetros")
 
 qtd = st.number_input("Quantidade de registros", 1, 10000, 100)
-decimais = st.slider("Casas decimais do valor", 2, 6, 2)
+decimais = st.slider("Casas decimais", 2, 6, 2)
 
 # =========================
-# 📅 INTERVALO DE LIQUIDAÇÃO
+# 📅 INTERVALO
 # =========================
 st.markdown("### 📅 Intervalo de liquidação")
 
 data_inicio, data_fim = st.date_input(
-    "Selecione o período de liquidação",
+    "Período",
     value=(date.today().replace(day=1), date.today())
 )
 
-st.info("Este intervalo afeta apenas o campo de data de liquidação.")
-
 if data_inicio > data_fim:
-    st.error("A data inicial não pode ser maior que a data final.")
+    st.error("Data inicial maior que final")
     st.stop()
 
 # =========================
-# 🚀 GERAR CSV
+# 🚀 GERAR
 # =========================
 if st.button("Gerar CSV"):
 
@@ -109,8 +126,7 @@ if st.button("Gerar CSV"):
     csv = df.to_csv(index=False).encode("utf-8")
 
     st.download_button(
-        label="Baixar CSV",
+        "Baixar CSV",
         data=csv,
-        file_name="movimentacoes.csv",
-        mime="text/csv"
+        file_name="movimentacoes.csv"
     )
