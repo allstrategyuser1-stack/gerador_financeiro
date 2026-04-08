@@ -55,6 +55,9 @@ def carregar_unidades(file):
 # =========================
 def carregar_centro_custo(file):
 
+    # =========================
+    # TENTAR LEITURA NORMAL
+    # =========================
     try:
         df = pd.read_excel(file, dtype=str)
     except:
@@ -64,9 +67,27 @@ def carregar_centro_custo(file):
         except:
             raise ValueError("Arquivo inválido.")
 
-    df.columns = [col.strip().lower() for col in df.columns]
+    # Normalizar colunas
+    df.columns = [str(col).strip().lower() for col in df.columns]
 
-    # Detectar formato completo
+    # =========================
+    # DETECTAR CABEÇALHO DUPLO
+    # =========================
+    if not any("código" in col or "codigo" in col for col in df.columns):
+        try:
+            file.seek(0)
+
+            # Releitura ignorando primeira linha
+            df = pd.read_excel(file, dtype=str, skiprows=1)
+
+            df.columns = [str(col).strip().lower() for col in df.columns]
+
+        except:
+            raise ValueError("Não foi possível interpretar o cabeçalho do arquivo.")
+
+    # =========================
+    # DETECTAR COLUNAS
+    # =========================
     if "código" in df.columns and "nome centro de custo externo" in df.columns:
         col_codigo = "código"
         col_nome = "nome centro de custo externo"
@@ -81,16 +102,25 @@ def carregar_centro_custo(file):
         df["nome"] = ""
         col_nome = "nome"
 
+    # =========================
+    # LIMPEZA
+    # =========================
     df = df[df[col_codigo].notnull()]
     df[col_codigo] = df[col_codigo].astype(str).str.strip()
 
     if df.empty:
         raise ValueError("Nenhum código válido encontrado.")
 
+    # =========================
+    # RETORNO
+    # =========================
     return {
         "cod_centro_custo": df[col_codigo].unique().tolist(),
         "preview": df[[col_codigo, col_nome]].rename(
-            columns={col_codigo: "Código", col_nome: "Centro de custo externo"}
+            columns={
+                col_codigo: "Código",
+                col_nome: "Centro de custo externo"
+            }
         )
     }
 
