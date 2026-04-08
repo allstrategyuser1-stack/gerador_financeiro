@@ -302,11 +302,7 @@ def gerar_movimentacoes(qtd, decimais, data_inicio_liq, data_fim_liq, params=Non
 
             "cod_unidade": cod_unidade,
             "cod_centro_de_custo": cod_centro_custo,
-            cod_tesouraria = (
-                random.choice(params["cod_tesouraria"])
-                if params and "cod_tesouraria" in params
-                else ""
-            )
+            "cod_tesouraria": cod_tesouraria,
             "cod_tipo_de_documento": random.choice(["10", "20"]),
             "cod_classificacao_financeira": cod_classificacao,
             "cod_projeto": random.choice(["1000", "2000"]),
