@@ -215,7 +215,7 @@ def gerar_movimentacoes(qtd, decimais, data_inicio_liq, data_fim_liq, params=Non
         # -------------------------
         # Valor
         # -------------------------
-        valor_float = round(random.uniform(50, 5000), decimais)
+        valor_float = round(random.uniform(1, 100000), decimais)
         valor = f"{valor_float:.{decimais}f}".replace(".", ",")
 
         # -------------------------
@@ -246,7 +246,7 @@ def gerar_movimentacoes(qtd, decimais, data_inicio_liq, data_fim_liq, params=Non
         cod_unidade = (
             random.choice(params["cod_unidade"])
             if params and "cod_unidade" in params
-            else "01"
+            else ""
         )
 
         # -------------------------
@@ -306,9 +306,9 @@ def gerar_movimentacoes(qtd, decimais, data_inicio_liq, data_fim_liq, params=Non
             "cod_unidade": cod_unidade,
             "cod_centro_de_custo": cod_centro_custo,
             "cod_tesouraria": cod_tesouraria,
-            "cod_tipo_de_documento": random.choice(["10", "20"]),
+            "cod_tipo_de_documento": "",
             "cod_classificacao_financeira": cod_classificacao,
-            "cod_projeto": random.choice(["1000", "2000"]),
+            "cod_projeto": "",
 
             "prev_s_doc": "N",
             "suspenso": "N",
