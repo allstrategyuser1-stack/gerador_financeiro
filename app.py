@@ -36,8 +36,8 @@ if file_cc:
 # =========================
 st.header("Classificação Financeira")
 
-file_est = st.file_uploader("Upload Estrutura Classificação")
-file_ext = st.file_uploader("Upload Classificação Externa")
+file_est = st.file_uploader("Estrutura")
+file_ext = st.file_uploader("Externo")
 
 if file_est and file_ext:
     r = carregar_classificacao(file_est, file_ext)
