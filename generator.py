@@ -15,11 +15,19 @@ def gerar_valor(decimais):
     return f"{valor:.{decimais}f}".replace(".", ",")
 
 
-def gerar_movimentacoes(qtd, decimais):
+def gerar_movimentacoes(qtd, decimais, data_inicio_liq, data_fim_liq):
     dados = []
 
     hoje = datetime.now()
-    inicio = hoje - timedelta(days=365)
+    inicio_base = hoje - timedelta(days=365)
+
+    # Converter intervalo de liquidação
+    inicio_liq = datetime.combine(data_inicio_liq, datetime.min.time())
+    fim_liq = datetime.combine(data_fim_liq, datetime.min.time())
+
+    # Garantir que não passe de hoje
+    if fim_liq > hoje:
+        fim_liq = hoje
 
     for i in range(qtd):
 
@@ -29,19 +37,17 @@ def gerar_movimentacoes(qtd, decimais):
         # Valor formatado
         valor = gerar_valor(decimais)
 
-        # Datas base
-        data_emissao = gerar_data(inicio, hoje)
+        # Datas principais
+        data_emissao = gerar_data(inicio_base, hoje)
         data_vencimento = data_emissao + timedelta(days=random.randint(1, 60))
 
         # Data liquidação (pode ser vazia)
         if random.random() < 0.5:
             data_liquidacao = None
         else:
-            data_liquidacao = data_vencimento + timedelta(days=random.randint(-10, 10))
-            if data_liquidacao > hoje:
-                data_liquidacao = hoje
+            data_liquidacao = gerar_data(inicio_liq, fim_liq)
 
-        # Ajuste: emissão nunca pode ser > vencimento/liquidação
+        # Garantir regras de consistência
         if data_emissao > data_vencimento:
             data_emissao = data_vencimento
 
@@ -51,7 +57,7 @@ def gerar_movimentacoes(qtd, decimais):
         # Data inclusão = hoje
         data_inclusao = hoje
 
-        # Cliente / Fornecedor
+        # Cliente / Fornecedor / Ambos
         if random.random() < 0.15:
             cod_cliente_fornec = f"CF{random.randint(1,5)}"
         else:
@@ -60,7 +66,7 @@ def gerar_movimentacoes(qtd, decimais):
             else:
                 cod_cliente_fornec = f"F{random.randint(1,50)}"
 
-        # doc_edit regra
+        # Regra doc_edit
         if data_vencimento > hoje and not data_liquidacao:
             doc_edit = "S"
         else:
@@ -82,7 +88,7 @@ def gerar_movimentacoes(qtd, decimais):
             "suspenso": "N",
             "pend_aprov": "N",
 
-            # Datas formatadas
+            # Datas
             "data_vencimento": data_vencimento.strftime("%Y-%m-%d"),
             "data_liquidacao": data_liquidacao.strftime("%Y-%m-%d") if data_liquidacao else "",
             "data_inclusao": data_inclusao.strftime("%Y-%m-%d"),
