@@ -2,6 +2,25 @@ import random
 import uuid
 from datetime import datetime, timedelta
 import pandas as pd
+import unicodedata
+
+
+# =========================
+# 🔧 NORMALIZAÇÃO
+# =========================
+def normalizar_texto(texto):
+    if not texto:
+        return ""
+    return unicodedata.normalize("NFKD", str(texto))\
+        .encode("ASCII", "ignore")\
+        .decode()\
+        .lower()\
+        .strip()
+
+
+def normalizar_colunas(df):
+    df.columns = [normalizar_texto(col) for col in df.columns]
+    return df
 
 
 # =========================
@@ -15,34 +34,40 @@ def carregar_unidades(file):
         file.seek(0)
         df = pd.read_csv(file, dtype=str)
 
-    df.columns = [col.strip().lower() for col in df.columns]
+    df = normalizar_colunas(df)
 
     col_codigo = next((c for c in df.columns if "codigo" in c), None)
     col_nome = next((c for c in df.columns if "nome" in c), None)
 
     if not col_codigo:
-        raise ValueError("Código não encontrado.")
+        raise ValueError("Coluna de Código não encontrada.")
 
     if not col_nome:
         df["nome"] = ""
         col_nome = "nome"
 
-    col_analitico = next((c for c in df.columns if "sintético" in c or "analitico" in c), None)
+    # Detectar analítico
+    col_analitico = next((c for c in df.columns if "analitico" in c), None)
 
     if col_analitico:
         df = df[df[col_analitico].str.upper() == "A"]
+
+        if df.empty:
+            raise ValueError("Nenhuma unidade analítica encontrada.")
 
     df = df[df[col_codigo].notnull()]
     df[col_codigo] = df[col_codigo].astype(str).str.strip()
 
     return {
         "cod_unidade": df[col_codigo].unique().tolist(),
-        "preview": df[[col_codigo, col_nome]]
+        "preview": df[[col_codigo, col_nome]].rename(
+            columns={col_codigo: "Código", col_nome: "Nome da unidade"}
+        )
     }
 
 
 # =========================
-# 📥 CENTRO CUSTO
+# 📥 CENTRO DE CUSTO
 # =========================
 def carregar_centro_custo(file):
 
@@ -52,23 +77,24 @@ def carregar_centro_custo(file):
         file.seek(0)
         df = pd.read_csv(file, dtype=str)
 
-    df.columns = [str(c).strip().lower() for c in df.columns]
+    df = normalizar_colunas(df)
 
-    # detectar cabeçalho duplo
-    if not any("codigo" in c or "código" in c for c in df.columns):
+    # Detectar cabeçalho inválido
+    if not any("codigo" in c for c in df.columns):
         file.seek(0)
         df = pd.read_excel(file, dtype=str, skiprows=1)
-        df.columns = [str(c).strip().lower() for c in df.columns]
+        df = normalizar_colunas(df)
 
-    if "código" in df.columns and "nome centro de custo externo" in df.columns:
-        col_codigo = "código"
+    # Detectar formato completo (ERP)
+    if "codigo" in df.columns and "nome centro de custo externo" in df.columns:
+        col_codigo = "codigo"
         col_nome = "nome centro de custo externo"
     else:
         col_codigo = next((c for c in df.columns if "codigo" in c), None)
         col_nome = next((c for c in df.columns if "nome" in c), None)
 
     if not col_codigo:
-        raise ValueError("Código não encontrado.")
+        raise ValueError("Coluna de Código não encontrada.")
 
     if not col_nome:
         df["nome"] = ""
@@ -77,14 +103,22 @@ def carregar_centro_custo(file):
     df = df[df[col_codigo].notnull()]
     df[col_codigo] = df[col_codigo].astype(str).str.strip()
 
+    if df.empty:
+        raise ValueError("Nenhum centro de custo válido encontrado.")
+
     return {
         "cod_centro_custo": df[col_codigo].unique().tolist(),
-        "preview": df[[col_codigo, col_nome]]
+        "preview": df[[col_codigo, col_nome]].rename(
+            columns={
+                col_codigo: "Código",
+                col_nome: "Centro de custo externo"
+            }
+        )
     }
 
 
 # =========================
-# 🔧 AUX
+# 🔧 AUXILIARES
 # =========================
 def gerar_data(inicio, fim):
     return inicio + timedelta(days=random.randint(0, (fim - inicio).days))
