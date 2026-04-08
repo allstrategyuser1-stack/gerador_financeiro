@@ -3,7 +3,7 @@ from generator import gerar_movimentacoes
 
 st.title("Gerador de Movimentações Financeiras")
 
-qtd = st.number_input("Quantidade de registros", 1, 1000, 100)
+qtd = st.number_input("Quantidade de registros", 1, 10000, 100)
 
 if st.button("Gerar CSV"):
     df = gerar_movimentacoes(qtd)
