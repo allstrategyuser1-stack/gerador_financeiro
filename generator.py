@@ -5,15 +5,19 @@ import pandas as pd
 
 
 # =========================
-# 📥 IMPORTAÇÃO FLEXÍVEL
+# 📥 IMPORTAÇÃO ROBUSTA
 # =========================
 def carregar_unidades(file):
 
-    # Ler arquivo
-    if file.name.endswith(".xlsx"):
+    # Tentar ler como Excel primeiro
+    try:
         df = pd.read_excel(file)
-    else:
-        df = pd.read_csv(file)
+    except:
+        try:
+            file.seek(0)
+            df = pd.read_csv(file)
+        except:
+            raise ValueError("Arquivo inválido. Use CSV ou XLSX.")
 
     # Normalizar nomes
     df.columns = [col.strip().lower() for col in df.columns]
@@ -28,14 +32,14 @@ def carregar_unidades(file):
     if not col_codigo:
         raise ValueError("Coluna de Código não encontrada.")
 
-    # Detectar coluna de nome (opcional)
+    # Detectar coluna de nome
     col_nome = None
     for col in df.columns:
         if "nome" in col:
             col_nome = col
             break
 
-    # Criar coluna de nome se não existir
+    # Se não tiver nome, cria vazio
     if not col_nome:
         df["nome"] = ""
         col_nome = "nome"
@@ -105,19 +109,16 @@ def gerar_movimentacoes(qtd, decimais, data_inicio_liq, data_fim_liq, params=Non
 
         data_inclusao = hoje
 
-        # Unidade dinâmica
         if params and "cod_unidade" in params:
             cod_unidade = random.choice(params["cod_unidade"])
         else:
             cod_unidade = random.choice([1, 2, 3])
 
-        # Cliente / fornecedor
         if random.random() < 0.15:
             cod_cliente_fornec = f"CF{random.randint(1,5)}"
         else:
             cod_cliente_fornec = f"C{random.randint(1,50)}" if natureza == "E" else f"F{random.randint(1,50)}"
 
-        # doc_edit
         if data_vencimento > hoje and not data_liquidacao:
             doc_edit = "S"
         else:
