@@ -3,7 +3,7 @@ from generator import (
     gerar_movimentacoes,
     carregar_unidades,
     carregar_centro_custo,
-    carregar_classificacao
+    carregar_classificacao,
     carregar_tesouraria
 )
 from datetime import date
