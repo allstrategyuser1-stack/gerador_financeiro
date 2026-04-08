@@ -5,46 +5,57 @@ import pandas as pd
 
 
 # =========================
-# 📥 IMPORTAÇÃO DE PARÂMETROS
+# 📥 IMPORTAÇÃO FLEXÍVEL
 # =========================
 def carregar_unidades(file):
-    df = pd.read_csv(file)
+
+    # Ler arquivo
+    if file.name.endswith(".xlsx"):
+        df = pd.read_excel(file)
+    else:
+        df = pd.read_csv(file)
 
     # Normalizar nomes
     df.columns = [col.strip().lower() for col in df.columns]
 
-    colunas_esperadas = [
-        "estrutura",
-        "nível superior",
-        "código",
-        "nome da unidade",
-        "sintético/analítico",
-        "moeda padrão"
-    ]
+    # Detectar coluna de código
+    col_codigo = None
+    for col in df.columns:
+        if "código" in col or "codigo" in col:
+            col_codigo = col
+            break
 
-    # Validação de colunas
-    for col in colunas_esperadas:
-        if col not in df.columns:
-            raise ValueError(f"Coluna obrigatória ausente: {col}")
+    if not col_codigo:
+        raise ValueError("Coluna de Código não encontrada.")
 
-    # Filtrar apenas analíticas (A)
-    df_filtrado = df[df["sintético/analítico"].str.upper() == "A"]
+    # Detectar coluna de nome (opcional)
+    col_nome = None
+    for col in df.columns:
+        if "nome" in col:
+            col_nome = col
+            break
 
-    if df_filtrado.empty:
-        raise ValueError("Nenhuma unidade analítica (A) encontrada no arquivo.")
+    # Criar coluna de nome se não existir
+    if not col_nome:
+        df["nome"] = ""
+        col_nome = "nome"
 
-    # Validar códigos
-    if df_filtrado["código"].isnull().any():
-        raise ValueError("Existem unidades analíticas com código vazio.")
+    # Limpar dados
+    df = df[df[col_codigo].notnull()]
+
+    if df.empty:
+        raise ValueError("Nenhum código válido encontrado.")
 
     return {
-        "cod_unidade": df_filtrado["código"].astype(str).unique().tolist(),
-        "preview": df_filtrado[["código", "nome da unidade"]]
+        "cod_unidade": df[col_codigo].astype(str).unique().tolist(),
+        "preview": df[[col_codigo, col_nome]].rename(
+            columns={col_codigo: "Código", col_nome: "Nome da unidade"}
+        )
     }
 
 
 # =========================
-# 🔧 FUNÇÕES AUXILIARES
+# 🔧 AUXILIARES
 # =========================
 def gerar_data(inicio, fim):
     delta = fim - inicio
@@ -58,9 +69,10 @@ def gerar_valor(decimais):
 
 
 # =========================
-# 🚀 GERAÇÃO PRINCIPAL
+# 🚀 GERAÇÃO
 # =========================
 def gerar_movimentacoes(qtd, decimais, data_inicio_liq, data_fim_liq, params=None):
+
     dados = []
 
     hoje = datetime.now()
@@ -93,13 +105,13 @@ def gerar_movimentacoes(qtd, decimais, data_inicio_liq, data_fim_liq, params=Non
 
         data_inclusao = hoje
 
-        # Unidade (com parâmetro ou fallback)
+        # Unidade dinâmica
         if params and "cod_unidade" in params:
             cod_unidade = random.choice(params["cod_unidade"])
         else:
             cod_unidade = random.choice([1, 2, 3])
 
-        # Cliente/Fornecedor
+        # Cliente / fornecedor
         if random.random() < 0.15:
             cod_cliente_fornec = f"CF{random.randint(1,5)}"
         else:
