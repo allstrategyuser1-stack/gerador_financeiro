@@ -4,6 +4,7 @@ from generator import (
     carregar_unidades,
     carregar_centro_custo,
     carregar_classificacao
+    carregar_tesouraria
 )
 from datetime import date
 
@@ -30,6 +31,21 @@ if file_cc:
     r = carregar_centro_custo(file_cc)
     params["cod_centro_custo"] = r["cod_centro_custo"]
     st.dataframe(r["preview"])
+
+# =========================
+# TESOURARIA
+# =========================
+st.header("Tesouraria (Contas Bancárias)")
+file_tes = st.file_uploader("", key="upload_tesouraria")
+if file_tes:
+    try:
+        r = carregar_tesouraria(file_tes)
+        params["cod_tesouraria"] = r["cod_tesouraria"]
+        st.success("Contas bancárias carregadas com sucesso!")
+        st.dataframe(r["preview"])
+    except Exception as e:
+        st.error(f"Erro tesouraria: {e}")
+        st.stop()
 
 # =========================
 # CLASSIFICAÇÃO
