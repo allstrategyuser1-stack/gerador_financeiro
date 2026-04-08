@@ -11,11 +11,11 @@ def carregar_unidades(file):
 
     # Tentar ler como Excel primeiro
     try:
-        df = pd.read_excel(file)
+        df = pd.read_excel(file, dtype=str)
     except:
         try:
             file.seek(0)
-            df = pd.read_csv(file)
+            df = pd.read_csv(file, dtype=str)
         except:
             raise ValueError("Arquivo inválido. Use CSV ou XLSX.")
 
@@ -39,10 +39,23 @@ def carregar_unidades(file):
             col_nome = col
             break
 
-    # Se não tiver nome, cria vazio
     if not col_nome:
         df["nome"] = ""
         col_nome = "nome"
+
+    # 🔥 Detectar coluna analítica/sintética
+    col_analitico = None
+    for col in df.columns:
+        if "sintético" in col or "analitico" in col:
+            col_analitico = col
+            break
+
+    # Aplicar filtro apenas se existir
+    if col_analitico:
+        df = df[df[col_analitico].str.upper() == "A"]
+
+        if df.empty:
+            raise ValueError("Nenhuma unidade analítica (A) encontrada.")
 
     # Limpar dados
     df = df[df[col_codigo].notnull()]
@@ -50,8 +63,11 @@ def carregar_unidades(file):
     if df.empty:
         raise ValueError("Nenhum código válido encontrado.")
 
+    # 🔥 Garantir que mantém formato original (ex: 01, 000)
+    df[col_codigo] = df[col_codigo].astype(str).str.strip()
+
     return {
-        "cod_unidade": df[col_codigo].astype(str).unique().tolist(),
+        "cod_unidade": df[col_codigo].unique().tolist(),
         "preview": df[[col_codigo, col_nome]].rename(
             columns={col_codigo: "Código", col_nome: "Nome da unidade"}
         )
@@ -109,16 +125,19 @@ def gerar_movimentacoes(qtd, decimais, data_inicio_liq, data_fim_liq, params=Non
 
         data_inclusao = hoje
 
+        # Unidade
         if params and "cod_unidade" in params:
             cod_unidade = random.choice(params["cod_unidade"])
         else:
-            cod_unidade = random.choice([1, 2, 3])
+            cod_unidade = random.choice(["01", "02", "03"])
 
+        # Cliente / fornecedor
         if random.random() < 0.15:
             cod_cliente_fornec = f"CF{random.randint(1,5)}"
         else:
             cod_cliente_fornec = f"C{random.randint(1,50)}" if natureza == "E" else f"F{random.randint(1,50)}"
 
+        # doc_edit
         if data_vencimento > hoje and not data_liquidacao:
             doc_edit = "S"
         else:
