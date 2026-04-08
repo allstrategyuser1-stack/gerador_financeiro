@@ -1,13 +1,19 @@
 import streamlit as st
-from generator import gerar_movimentacoes, carregar_unidades
+from generator import (
+    gerar_movimentacoes,
+    carregar_unidades,
+    carregar_centro_custo
+)
 from datetime import date
 import pandas as pd
 import io
 
 st.title("Gerador de Movimentações Financeiras")
 
+params = {}
+
 # =========================
-# 📥 TEMPLATE
+# 📥 TEMPLATE UNIDADES
 # =========================
 st.markdown("### 📄 Template de Unidades")
 
@@ -21,22 +27,18 @@ buffer = io.BytesIO()
 gerar_template_unidade().to_excel(buffer, index=False, engine="openpyxl")
 
 st.download_button(
-    label="Baixar template simplificado",
+    label="Baixar template de Unidades",
     data=buffer.getvalue(),
     file_name="template_unidades.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
 
-st.caption("Você pode importar um arquivo completo ou apenas com Código e Nome da unidade.")
-
 # =========================
-# 📤 IMPORTAÇÃO
+# 📤 IMPORTAR UNIDADES
 # =========================
 st.markdown("### 📤 Importar Unidades")
 
-file_unidade = st.file_uploader("Upload (CSV ou XLSX)")
-
-params = {}
+file_unidade = st.file_uploader("Upload Unidades (CSV ou XLSX)", key="unidade")
 
 if file_unidade:
     try:
@@ -44,12 +46,31 @@ if file_unidade:
         params["cod_unidade"] = resultado["cod_unidade"]
 
         st.success("Unidades carregadas com sucesso!")
-
-        st.markdown("#### 🔍 Pré-visualização")
         st.dataframe(resultado["preview"])
 
     except Exception as e:
-        st.error(f"Erro no arquivo: {e}")
+        st.error(f"Erro no arquivo de unidades: {e}")
+        st.stop()
+
+# =========================
+# 📤 IMPORTAR CENTRO DE CUSTO
+# =========================
+st.markdown("### 📤 Importar Centro de Custo")
+
+st.info("Utilize os dados do Centro de Custo Externo do Software Fluxo.")
+
+file_cc = st.file_uploader("Upload Centro de Custo (CSV ou XLSX)", key="cc")
+
+if file_cc:
+    try:
+        resultado_cc = carregar_centro_custo(file_cc)
+        params["cod_centro_custo"] = resultado_cc["cod_centro_custo"]
+
+        st.success("Centro de custo carregado com sucesso!")
+        st.dataframe(resultado_cc["preview"])
+
+    except Exception as e:
+        st.error(f"Erro no arquivo de centro de custo: {e}")
         st.stop()
 
 # =========================
@@ -77,7 +98,7 @@ if data_inicio > data_fim:
     st.stop()
 
 # =========================
-# 🚀 GERAÇÃO
+# 🚀 GERAR CSV
 # =========================
 if st.button("Gerar CSV"):
 
