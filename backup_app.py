@@ -3,7 +3,8 @@ from generator import (
     gerar_movimentacoes,
     carregar_unidades,
     carregar_centro_custo,
-    carregar_classificacao
+    carregar_classificacao,
+    carregar_tesouraria
 )
 from datetime import date
 
@@ -32,6 +33,21 @@ if file_cc:
     st.dataframe(r["preview"])
 
 # =========================
+# TESOURARIA
+# =========================
+st.header("Tesouraria (Contas Bancárias)")
+file_tes = st.file_uploader("", key="upload_tesouraria")
+if file_tes:
+    try:
+        r = carregar_tesouraria(file_tes)
+        params["cod_tesouraria"] = r["cod_tesouraria"]
+        st.success("Contas bancárias carregadas com sucesso!")
+        st.dataframe(r["preview"])
+    except Exception as e:
+        st.error(f"Erro tesouraria: {e}")
+        st.stop()
+
+# =========================
 # CLASSIFICAÇÃO
 # =========================
 st.header("Classificação Financeira")
@@ -47,7 +63,7 @@ if file_est and file_ext:
 # =========================
 # PARÂMETROS
 # =========================
-qtd = st.number_input("Quantidade de documentos desejada", 1, 10000, 100)
+qtd = st.number_input("Quantidade de documentos desejada", 1, 10000, 20)
 dec = st.slider("Quantidade de casas decimais no valor", 2, 6, 2)
 
 data_ini, data_fim = st.date_input(
