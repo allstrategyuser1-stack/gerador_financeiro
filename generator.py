@@ -138,39 +138,131 @@ def carregar_classificacao(estrutura_file, externo_file):
 def gerar_movimentacoes(qtd, decimais, data_inicio_liq, data_fim_liq, params=None):
 
     dados = []
+
     hoje = datetime.now()
     inicio_base = hoje - timedelta(days=365)
 
     inicio_liq = datetime.combine(data_inicio_liq, datetime.min.time())
     fim_liq = datetime.combine(data_fim_liq, datetime.min.time())
 
+    if fim_liq > hoje:
+        fim_liq = hoje
+
     for i in range(qtd):
 
+        # -------------------------
+        # Natureza
+        # -------------------------
         natureza = random.choice(["E", "S"])
-        valor = f"{round(random.uniform(50,5000), decimais):.{decimais}f}".replace(".", ",")
 
-        emissao = inicio_base + timedelta(days=random.randint(0, 365))
-        venc = emissao + timedelta(days=random.randint(1, 60))
-        liquid = inicio_liq + timedelta(days=random.randint(0, (fim_liq - inicio_liq).days)) if random.random() > 0.5 else None
+        # -------------------------
+        # Valor
+        # -------------------------
+        valor_float = round(random.uniform(50, 5000), decimais)
+        valor = f"{valor_float:.{decimais}f}".replace(".", ",")
 
-        cod_unidade = random.choice(params.get("cod_unidade", ["01"]))
-        cod_cc = random.choice(params.get("cod_centro_custo", [""])) if "cod_centro_custo" in params else ""
+        # -------------------------
+        # Datas
+        # -------------------------
+        data_emissao = inicio_base + timedelta(days=random.randint(0, 365))
+        data_vencimento = data_emissao + timedelta(days=random.randint(1, 60))
 
+        if random.random() < 0.5:
+            data_liquidacao = None
+        else:
+            data_liquidacao = inicio_liq + timedelta(
+                days=random.randint(0, (fim_liq - inicio_liq).days)
+            )
+
+        # Ajustes de consistência
+        if data_emissao > data_vencimento:
+            data_emissao = data_vencimento
+
+        if data_liquidacao and data_emissao > data_liquidacao:
+            data_emissao = data_liquidacao
+
+        data_inclusao = hoje
+
+        # -------------------------
+        # Unidade
+        # -------------------------
+        cod_unidade = (
+            random.choice(params["cod_unidade"])
+            if params and "cod_unidade" in params
+            else "01"
+        )
+
+        # -------------------------
+        # Centro de custo
+        # -------------------------
+        cod_centro_custo = (
+            random.choice(params["cod_centro_custo"])
+            if params and "cod_centro_custo" in params
+            else ""
+        )
+
+        # -------------------------
+        # Classificação
+        # -------------------------
         if params and "classificacoes" in params:
             lista = params["classificacoes"].get(natureza, [])
-            cod_class = random.choice(lista) if lista else ""
+            cod_classificacao = random.choice(lista) if lista else ""
         else:
-            cod_class = ""
+            cod_classificacao = ""
 
-        dados.append({
+        # -------------------------
+        # Cliente / fornecedor
+        # -------------------------
+        if random.random() < 0.15:
+            cod_cliente_fornec = f"CF{random.randint(1,5)}"
+        else:
+            if natureza == "E":
+                cod_cliente_fornec = f"C{random.randint(1,50)}"
+            else:
+                cod_cliente_fornec = f"F{random.randint(1,50)}"
+
+        # -------------------------
+        # doc_edit
+        # -------------------------
+        if data_vencimento > hoje and not data_liquidacao:
+            doc_edit = "S"
+        else:
+            doc_edit = "N"
+
+        # -------------------------
+        # REGISTRO COMPLETO
+        # -------------------------
+        registro = {
             "documento": f"DOC-{1000+i}",
             "natureza": natureza,
             "valor": valor,
+
             "cod_unidade": cod_unidade,
-            "cod_centro_de_custo": cod_cc,
-            "cod_classificacao_financeira": cod_class,
-            "data_vencimento": venc.strftime("%Y-%m-%d"),
-            "data_liquidacao": liquid.strftime("%Y-%m-%d") if liquid else ""
-        })
+            "cod_centro_de_custo": cod_centro_custo,
+            "cod_tesouraria": random.choice(["1", "2"]),
+            "cod_tipo_de_documento": random.choice(["10", "20"]),
+            "cod_classificacao_financeira": cod_classificacao,
+            "cod_projeto": random.choice(["1000", "2000"]),
+
+            "prev_s_doc": "N",
+            "suspenso": "N",
+            "pend_aprov": "N",
+
+            "data_vencimento": data_vencimento.strftime("%Y-%m-%d"),
+            "data_liquidacao": data_liquidacao.strftime("%Y-%m-%d") if data_liquidacao else "",
+            "data_inclusao": data_inclusao.strftime("%Y-%m-%d"),
+
+            "erp_origem": "STREAMLIT",
+            "erp_uuid": str(uuid.uuid4()),
+
+            "data_emissao": data_emissao.strftime("%Y-%m-%d"),
+
+            "historico": f"Lancamento {'entrada' if natureza == 'E' else 'saida'} gerado automaticamente",
+
+            "cod_cliente_fornec": cod_cliente_fornec,
+            "doc_edit": doc_edit
+        }
+
+        dados.append(registro)
 
     return pd.DataFrame(dados)
