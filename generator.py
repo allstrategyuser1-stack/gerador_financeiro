@@ -79,19 +79,25 @@ def carregar_centro_custo(file):
 
     df = normalizar_colunas(df)
 
-    # Detectar cabeçalho inválido
+    # Cabeçalho duplo
     if not any("codigo" in c for c in df.columns):
         file.seek(0)
         df = pd.read_excel(file, dtype=str, skiprows=1)
         df = normalizar_colunas(df)
 
-    # Detectar formato completo (ERP)
+    # Detectar colunas
     if "codigo" in df.columns and "nome centro de custo externo" in df.columns:
         col_codigo = "codigo"
         col_nome = "nome centro de custo externo"
     else:
         col_codigo = next((c for c in df.columns if "codigo" in c), None)
-        col_nome = next((c for c in df.columns if "nome" in c), None)
+
+        col_nome = next((
+            c for c in df.columns
+            if "nome centro de custo externo" in c
+            or "centro de custo externo" in c
+            or "nome" in c
+        ), None)
 
     if not col_codigo:
         raise ValueError("Coluna de Código não encontrada.")
@@ -102,9 +108,6 @@ def carregar_centro_custo(file):
 
     df = df[df[col_codigo].notnull()]
     df[col_codigo] = df[col_codigo].astype(str).str.strip()
-
-    if df.empty:
-        raise ValueError("Nenhum centro de custo válido encontrado.")
 
     return {
         "cod_centro_custo": df[col_codigo].unique().tolist(),
