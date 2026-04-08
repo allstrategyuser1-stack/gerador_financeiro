@@ -34,7 +34,7 @@ st.caption("Você pode importar um arquivo completo ou apenas com Código e Nome
 # =========================
 st.markdown("### 📤 Importar Unidades")
 
-file_unidade = st.file_uploader("Upload (CSV ou XLSX)", type=["csv", "xlsx"])
+file_unidade = st.file_uploader("Upload (CSV ou XLSX)")
 
 params = {}
 
