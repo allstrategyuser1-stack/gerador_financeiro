@@ -63,7 +63,7 @@ if file_est and file_ext:
 # =========================
 # PARÂMETROS
 # =========================
-qtd = st.number_input("Quantidade de documentos desejada", 1, 10000, 100)
+qtd = st.number_input("Quantidade de documentos desejada", 1, 10000, 20)
 dec = st.slider("Quantidade de casas decimais no valor", 2, 6, 2)
 
 data_ini, data_fim = st.date_input(
