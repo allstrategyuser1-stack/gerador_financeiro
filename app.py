@@ -25,7 +25,7 @@ if file_un:
 # CENTRO DE CUSTO
 # =========================
 st.header("Centro de Custo")
-file_cc = st.file_uploader("T")
+file_cc = st.file_uploader("")
 if file_cc:
     r = carregar_centro_custo(file_cc)
     params["cod_centro_custo"] = r["cod_centro_custo"]
