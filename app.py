@@ -2,131 +2,68 @@ import streamlit as st
 from generator import (
     gerar_movimentacoes,
     carregar_unidades,
-    carregar_centro_custo
+    carregar_centro_custo,
+    carregar_classificacao
 )
 from datetime import date
-import pandas as pd
-import io
 
 st.title("Gerador de Movimentações Financeiras")
 
 params = {}
 
 # =========================
-# 📥 TEMPLATE UNIDADES
+# UNIDADES
 # =========================
-st.markdown("### 📄 Template de Unidades")
-
-def gerar_template_unidade():
-    return pd.DataFrame({
-        "Código": [],
-        "Nome da unidade": []
-    })
-
-buffer_un = io.BytesIO()
-gerar_template_unidade().to_excel(buffer_un, index=False, engine="openpyxl")
-
-st.download_button(
-    label="Baixar template de Unidades",
-    data=buffer_un.getvalue(),
-    file_name="template_unidades.xlsx"
-)
+st.header("Unidades")
+file_un = st.file_uploader("Upload Unidades")
+if file_un:
+    r = carregar_unidades(file_un)
+    params["cod_unidade"] = r["cod_unidade"]
+    st.dataframe(r["preview"])
 
 # =========================
-# 📤 IMPORTAR UNIDADES
+# CENTRO DE CUSTO
 # =========================
-st.markdown("### 📤 Importar Unidades")
-
-file_unidade = st.file_uploader("Upload Unidades", key="unidade")
-
-if file_unidade:
-    try:
-        resultado = carregar_unidades(file_unidade)
-        params["cod_unidade"] = resultado["cod_unidade"]
-
-        st.success("Unidades carregadas com sucesso!")
-        st.dataframe(resultado["preview"])
-
-    except Exception as e:
-        st.error(f"Erro unidades: {e}")
-        st.stop()
-
-# =========================
-# 📥 TEMPLATE CENTRO CUSTO
-# =========================
-st.markdown("### 📄 Template Centro de Custo")
-
-def gerar_template_cc():
-    return pd.DataFrame({
-        "Código": [],
-        "Centro de custo externo": []
-    })
-
-buffer_cc = io.BytesIO()
-gerar_template_cc().to_excel(buffer_cc, index=False, engine="openpyxl")
-
-st.download_button(
-    label="Baixar template de Centro de Custo",
-    data=buffer_cc.getvalue(),
-    file_name="template_centro_custo.xlsx"
-)
-
-# =========================
-# 📤 IMPORTAR CENTRO CUSTO
-# =========================
-st.markdown("### 📤 Importar Centro de Custo")
-
-st.info("Utilize o Centro de Custo Externo do Software Fluxo.")
-
-file_cc = st.file_uploader("Upload Centro de Custo", key="cc")
-
+st.header("Centro de Custo")
+file_cc = st.file_uploader("Upload Centro de Custo")
 if file_cc:
-    try:
-        resultado_cc = carregar_centro_custo(file_cc)
-        params["cod_centro_custo"] = resultado_cc["cod_centro_custo"]
-
-        st.success("Centro de custo carregado!")
-        st.dataframe(resultado_cc["preview"])
-
-    except Exception as e:
-        st.error(f"Erro centro de custo: {e}")
-        st.stop()
+    r = carregar_centro_custo(file_cc)
+    params["cod_centro_custo"] = r["cod_centro_custo"]
+    st.dataframe(r["preview"])
 
 # =========================
-# ⚙️ PARÂMETROS
+# CLASSIFICAÇÃO
 # =========================
-st.markdown("### ⚙️ Parâmetros")
+st.header("Classificação Financeira")
 
-qtd = st.number_input("Quantidade de registros", 1, 10000, 100)
-decimais = st.slider("Casas decimais", 2, 6, 2)
+file_est = st.file_uploader("Upload Estrutura Classificação")
+file_ext = st.file_uploader("Upload Classificação Externa")
+
+if file_est and file_ext:
+    r = carregar_classificacao(file_est, file_ext)
+    params["classificacoes"] = r["classificacoes"]
+    st.dataframe(r["preview"])
 
 # =========================
-# 📅 INTERVALO
+# PARÂMETROS
 # =========================
-st.markdown("### 📅 Intervalo de liquidação")
+qtd = st.number_input("Quantidade", 1, 10000, 100)
+dec = st.slider("Decimais", 2, 6, 2)
 
-data_inicio, data_fim = st.date_input(
-    "Período",
+data_ini, data_fim = st.date_input(
+    "Período liquidação",
     value=(date.today().replace(day=1), date.today())
 )
 
-if data_inicio > data_fim:
-    st.error("Data inicial maior que final")
-    st.stop()
-
 # =========================
-# 🚀 GERAR
+# GERAR
 # =========================
 if st.button("Gerar CSV"):
-
-    df = gerar_movimentacoes(qtd, decimais, data_inicio, data_fim, params)
-
+    df = gerar_movimentacoes(qtd, dec, data_ini, data_fim, params)
     st.dataframe(df.head())
-
-    csv = df.to_csv(index=False).encode("utf-8")
 
     st.download_button(
         "Baixar CSV",
-        data=csv,
-        file_name="movimentacoes.csv"
+        df.to_csv(index=False).encode(),
+        "movimentacoes.csv"
     )
